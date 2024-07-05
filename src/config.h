@@ -18,4 +18,4 @@ using namespace websockets;
 WebsocketsServer server;
 AsyncWebServer webserver(80);
 
-int LValue, RValue, commaIndex;
+int RValue, GValue, BValue, HValue, SValue, VValue, commaIndex1, commaIndex2;
