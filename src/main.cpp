@@ -28,6 +28,7 @@
 
 #include "config.h"
 #include "web.h"
+#include "addressable_leds.hpp"
 
 #if (defined(ARDUINO) && ARDUINO >= 155) || defined(ESP8266)
     #define YIELD yield();
@@ -54,6 +55,8 @@ const float green_max_brightness = 1;
 const float white_top_max_brightness = 0.5;
 const float white_bot_max_brightness = 0.5;
 
+AddressableLEDS * leds;
+
 
 void handle_message_HTTP(AsyncWebServerRequest * msg);
 
@@ -67,27 +70,29 @@ inline Print &operator <<(Print &stream, T arg)
 int blink;
 
 void change(int r, int g, int b, int h, int s, int v){
-    float saturation;
-    #if RGBLED
-        saturation = 1;
-    #else
-        saturation = s/100;
-    #endif
-    #if COMMON_CATHODE
-        analogWrite(red, round(255 - r * saturation));
-        analogWrite(green, round(255 - g * saturation));
-        analogWrite(blue, round(255 - b * saturation));
-        // analogWrite(white_bot, 255 - v);
-        // analogWrite(white_top, 255 - v);
-    #else
-        analogWrite(red_top, round(r * saturation));
-        analogWrite(green_top, round(g * saturation));
-        analogWrite(blue_top, round(b * saturation));
+    // float saturation;
+    // #if RGBLED
+    //     saturation = 1;
+    // #else
+    //     saturation = s/100;
+    // #endif
+    // #if COMMON_CATHODE
+    //     analogWrite(red, round(255 - r * saturation));
+    //     analogWrite(green, round(255 - g * saturation));
+    //     analogWrite(blue, round(255 - b * saturation));
+    //     // analogWrite(white_bot, 255 - v);
+    //     // analogWrite(white_top, 255 - v);
+    // #else
+    //     analogWrite(red_top, round(r * saturation));
+    //     analogWrite(green_top, round(g * saturation));
+    //     analogWrite(blue_top, round(b * saturation));
 
-        analogWrite(red_bot, round(r * saturation));
-        analogWrite(green_bot, round(g * saturation));
-        analogWrite(blue_bot, round(b * saturation));
-    #endif
+    //     analogWrite(red_bot, round(r * saturation));
+    //     analogWrite(green_bot, round(g * saturation));
+    //     analogWrite(blue_bot, round(b * saturation));
+    // #endif
+
+    leds->changeboth(rgbval_t{r, g, b});
 }
 
 void turn_off(int led){
@@ -114,19 +119,23 @@ void init(int leds[], int size_){
 }
 
 void setup() {
-    blink = 1;
-    // set the LED as an output
-    init(all_leds, sizeof(all_leds)/sizeof(all_leds[0]));
+    leds = new AddressableLEDS(rgbled_t{red_top, green_top, blue_top, 1}, rgbled_t{red_bot, green_bot, blue_bot, 1});
 
     Serial.begin(BAUD_RATE);
-    all_off(all_leds, sizeof(all_leds)/sizeof(all_leds[0]));
+
+
+    // blink = 1;
+    // // set the LED as an output
+    // init(all_leds, sizeof(all_leds)/sizeof(all_leds[0]));
+
+    // all_off(all_leds, sizeof(all_leds)/sizeof(all_leds[0]));
 
     // Create AP
     // WiFi.softAP(ssid, password);
     // IPAddress IP = WiFi.softAPIP();
     // Serial.print("AP IP address: ");
     // Serial.println(IP);
-
+    Serial << ssid << " " << password;
     WiFi.mode(WIFI_STA);
     WiFi.begin(ssid, password);
     while(WiFi.status() != WL_CONNECTED){
@@ -185,7 +194,7 @@ void handle_message(WebsocketsMessage msg) {
 }
 
 void handle_message_HTTP(AsyncWebServerRequest * msg) {
-    int args = msg->args();
+    // int args = msg->args();
     // for(int i=0;i<args;i++){
     //     Serial.printf("ARG[%s]: %s\n", msg->argName(i).c_str(), msg->arg(i).c_str());
     // }
@@ -204,7 +213,7 @@ void handle_message_HTTP(AsyncWebServerRequest * msg) {
 
 
 void loop(){
-    
+    leds->run();
     // auto client = server.accept();
     // client.onMessage(handle_message);
     // while (client.available()) {

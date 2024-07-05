@@ -21,6 +21,12 @@ typedef enum Modes_t {
     
 };
 
+typedef struct hsvval_t{
+    float h;
+    float s;
+    float v;
+};
+
 class AddressableLEDS{
     private:
         // const RGBpin top, bot;
@@ -31,11 +37,20 @@ class AddressableLEDS{
         Modes_t mode;
 
         float brightness;
+
+        unsigned long start;
+
+        float breath_step;
+        int breath_interval;
+
+        float cur_step;
+        int cycle_interval;
     
     public:
         AddressableLEDS(rgbled_t topled, rgbled_t botled):
-            top(topled.red, topled.green, topled.blue, topled.type), bottom{botled.red, botled.green, botled.blue, botled.type} 
-            {};
+            top(topled.red, topled.green, topled.blue, topled.type), bottom{botled.red, botled.green, botled.blue, botled.type},
+            breath_interval(100000), breath_step(0.1f), cur_step(0), cycle_interval(1000)
+        {};
 
         void init(); 
 
@@ -59,4 +74,6 @@ class AddressableLEDS{
         void run();
 
         void breath();
+
+        rgbval_t hue_to_rgb(float h, float s, float v);
 };

@@ -1,5 +1,6 @@
-const char* ssid = "*"; //Enter SSID
-const char* password = "*"; //Enter Password
+#include "defs.hpp"
+// const char* ssid = SSID; //Enter SSID
+// const char* password = PASS; //Enter Password
 
 #define AIN1 13
 #define BIN1 12
