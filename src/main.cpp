@@ -8,6 +8,7 @@
     #define RED 5
     #define WHITE_TOP 16
     #define WHITE_BOTTOM 19
+    #define BAUD_RATE 115200
 
 #elif ESP12
     #include <ESP8266WiFi.h>
@@ -16,6 +17,7 @@
     #define RED 16
     #define WHITE_TOP 15
     #define WHITE_BOTTOM 15
+    #define BAUD_RATE 9600
 #endif
 
 #include <ESPAsyncWebServer.h>
@@ -23,12 +25,11 @@
 #include "config.h"
 #include "web.h"
 
-/*
-  Rui Santos & Sara Santos - Random Nerd Tutorials
-  Complete project details at https://RandomNerdTutorials.com/esp32-pwm-arduino-ide/
-  Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files.  
-  The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
-*/
+#if (defined(ARDUINO) && ARDUINO >= 155) || defined(ESP8266)
+    #define YIELD yield();
+#else
+    #define YIELD
+#endif
 
 // the number of the LED pin
 const int blue = BLUE;  // 16 corresponds to GPIO 16
@@ -44,6 +45,9 @@ const float red_max_brightness = 0.7;
 const float green_max_brightness = 1;
 const float white_top_max_brightness = 0.5;
 const float white_bot_max_brightness = 0.5;
+
+
+void handle_message_HTTP(AsyncWebServerRequest * msg);
 
 
 // Generic template
@@ -80,14 +84,15 @@ void turn_off(int led){
     #if COMMON_CATHODE
         digitalWrite(led, HIGH);
     #else
-        // digitalWrite(led, LOW);
+        digitalWrite(led, LOW);
     #endif
     
 }
 
 void all_off(int leds[], int size_){
     for (int i = 0; i < size_; i++){
-        // Serial.println(leds[i]);s
+        Serial.print("turning off: ");
+        Serial.println(leds[i]);
         turn_off(leds[i]);
         // delay(20);
     }
@@ -103,7 +108,7 @@ void setup() {
     // set the LED as an output
     init(all_leds, sizeof(all_leds)/sizeof(all_leds[0]));
 
-    Serial.begin(115200);
+    Serial.begin(BAUD_RATE);
     all_off(all_leds, sizeof(all_leds)/sizeof(all_leds[0]));
 
     // Create AP
@@ -128,6 +133,14 @@ void setup() {
         response->addHeader("Content-Encoding", "gzip");
         request->send(response);
     });
+
+    webserver.on("/off", HTTP_POST, [](AsyncWebServerRequest * req){
+        AsyncWebServerResponse *response = req->beginResponse_P(200, "text/html", "SUCCESS");
+        all_off(all_leds, 5);
+        req->send(response);
+    });
+
+    webserver.on("/colour", HTTP_GET, handle_message_HTTP);
 
     // start server
     webserver.begin();
@@ -161,10 +174,29 @@ void handle_message(WebsocketsMessage msg) {
 
 }
 
+void handle_message_HTTP(AsyncWebServerRequest * msg) {
+    int args = msg->args();
+    // for(int i=0;i<args;i++){
+    //     Serial.printf("ARG[%s]: %s\n", msg->argName(i).c_str(), msg->arg(i).c_str());
+    // }
+
+    RValue = round(atof(msg->getParam("r")->value().c_str()));
+    GValue = round(atof(msg->getParam("g")->value().c_str()));
+    BValue = round(atof(msg->getParam("b")->value().c_str()));
+    HValue = round(atof(msg->getParam("h")->value().c_str()));
+    SValue = round(atof(msg->getParam("s")->value().c_str()));
+    VValue = round(atof(msg->getParam("v")->value().c_str()));
+
+    change(RValue, GValue, BValue, HValue, SValue, VValue);
+    
+    msg->send(200);
+}
+
+
 void loop(){
-    auto client = server.accept();
-    client.onMessage(handle_message);
-    while (client.available()) {
-        client.poll();
-    }
+    // auto client = server.accept();
+    // client.onMessage(handle_message);
+    // while (client.available()) {
+    //     client.poll();
+    // }
 }
