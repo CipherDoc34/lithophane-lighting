@@ -6,17 +6,21 @@
     #define BLUE 18
     #define GREEN 17
     #define RED 5
-    #define WHITE_TOP 16
-    #define WHITE_BOTTOM 19
+    // #define WHITE_TOP 16
+    // #define WHITE_BOTTOM 19
     #define BAUD_RATE 115200
 
 #elif ESP12
     #include <ESP8266WiFi.h>
-    #define BLUE 12
-    #define GREEN 14
-    #define RED 16
-    #define WHITE_TOP 15
-    #define WHITE_BOTTOM 15
+    #define BLUE_TOP 15
+    #define GREEN_TOP 13
+    #define RED_TOP 12
+
+    #define BLUE_BOT 0
+    #define GREEN_BOT 2
+    #define RED_BOT 14
+    // #define WHITE_TOP 15
+    // #define WHITE_BOTTOM 15
     #define BAUD_RATE 9600
 #endif
 
@@ -32,13 +36,17 @@
 #endif
 
 // the number of the LED pin
-const int blue = BLUE;  // 16 corresponds to GPIO 16
-const int green = GREEN;
-const int red = RED;
-const int white_top = WHITE_TOP;
-const int white_bot = WHITE_BOTTOM; 
+const int blue_top = BLUE_TOP;
+const int green_top = GREEN_TOP;
+const int red_top = RED_TOP;
 
-int all_leds[] = {blue, red, green, white_bot, white_top};
+const int blue_bot = BLUE_BOT;
+const int green_bot = GREEN_BOT;
+const int red_bot = RED_BOT;
+// const int white_top = WHITE_TOP;
+// const int white_bot = WHITE_BOTTOM; 
+
+int all_leds[] = {blue_top, green_top, red_top, blue_bot, green_bot, red_bot};
 
 const float blue_max_brightness = 0.7;
 const float red_max_brightness = 0.7;
@@ -69,14 +77,16 @@ void change(int r, int g, int b, int h, int s, int v){
         analogWrite(red, round(255 - r * saturation));
         analogWrite(green, round(255 - g * saturation));
         analogWrite(blue, round(255 - b * saturation));
-        analogWrite(white_bot, 255 - v);
-        analogWrite(white_top, 255 - v);
+        // analogWrite(white_bot, 255 - v);
+        // analogWrite(white_top, 255 - v);
     #else
-        analogWrite(red, round(r * saturation));
-        analogWrite(green, round(g * saturation));
-        analogWrite(blue, round(b * saturation));
-        analogWrite(white_bot, v);
-        analogWrite(white_top, v);
+        analogWrite(red_top, round(r * saturation));
+        analogWrite(green_top, round(g * saturation));
+        analogWrite(blue_top, round(b * saturation));
+
+        analogWrite(red_bot, round(r * saturation));
+        analogWrite(green_bot, round(g * saturation));
+        analogWrite(blue_bot, round(b * saturation));
     #endif
 }
 
@@ -194,6 +204,7 @@ void handle_message_HTTP(AsyncWebServerRequest * msg) {
 
 
 void loop(){
+    
     // auto client = server.accept();
     // client.onMessage(handle_message);
     // while (client.available()) {

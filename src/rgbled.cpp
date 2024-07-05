@@ -31,16 +31,29 @@ int RgbLed::getblue(){
 }
 
 void RgbLed::writeRGB(){
-    analogWrite(this->redpin, this->redval);
-    analogWrite(this->greenpin, this->greenval);
-    analogWrite(this->bluepin, this->blueval);
+    if (this->type_led){
+        analogWrite(this->redpin, round((float)this->redval * brightness));
+        analogWrite(this->greenpin, round((float)this->greenval * brightness));
+        analogWrite(this->bluepin, round((float)this->blueval * brightness));
+    } else {
+        analogWrite(this->redpin, MAX_ANALOG - round((float)this->redval * brightness));
+        analogWrite(this->greenpin, MAX_ANALOG - round((float)this->greenval * brightness));
+        analogWrite(this->bluepin, MAX_ANALOG - round((float)this->blueval * brightness));
+    }
+    
     this->state = true;
 }
 
 void RgbLed::turnoff(){
-    analogWrite(this->redpin, 0);
-    analogWrite(this->greenpin, 0);
-    analogWrite(this->bluepin, 0);
+    if (this->type_led) {
+        analogWrite(this->redpin, 0);
+        analogWrite(this->greenpin, 0);
+        analogWrite(this->bluepin, 0);
+    } else {
+        analogWrite(this->redpin, MAX_ANALOG);
+        analogWrite(this->greenpin, MAX_ANALOG);
+        analogWrite(this->bluepin, MAX_ANALOG);
+    }
     this->state = false;
 }
 
@@ -54,3 +67,28 @@ void RgbLed::switchState(){
     else
         this->writeRGB();
 }
+
+void RgbLed::init(){
+    
+    if (this->type_led){
+        digitalWrite(this->bluepin, LOW);
+        digitalWrite(this->redpin, LOW);
+        digitalWrite(this->greenpin, LOW);
+    } else {
+        digitalWrite(this->bluepin, HIGH);
+        digitalWrite(this->redpin, HIGH);
+        digitalWrite(this->greenpin, HIGH);
+    }
+    
+    this->writeRGB();
+    this->turnoff();
+}
+
+void RgbLed::setBrightness(float brightness){
+    this->brightness = brightness;
+}
+
+float RgbLed::getBrightness(){
+    return this->brightness;
+}
+
