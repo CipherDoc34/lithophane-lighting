@@ -30,6 +30,7 @@
 #include "web.h"
 #include "addressable_leds.hpp"
 
+
 #if (defined(ARDUINO) && ARDUINO >= 155) || defined(ESP8266)
     #define YIELD yield();
 #else
@@ -60,6 +61,11 @@ AddressableLEDS * leds;
 
 void handle_message_HTTP(AsyncWebServerRequest * msg);
 
+void handle_change(AsyncWebServerRequest * msg);
+
+void get_current_status(AsyncWebServerRequest * msg);
+
+void change_mode(AsyncWebServerRequest * msg);
 
 // Generic template
 template<class T> 
@@ -153,19 +159,61 @@ void setup() {
         request->send(response);
     });
 
-    webserver.on("/off", HTTP_POST, [](AsyncWebServerRequest * req){
-        AsyncWebServerResponse *response = req->beginResponse_P(200, "text/html", "SUCCESS");
-        all_off(all_leds, 5);
-        req->send(response);
-    });
+    // webserver.on("/off", HTTP_POST, [](AsyncWebServerRequest * req){
+    //     AsyncWebServerResponse *response = req->beginResponse_P(200, "text/html", "SUCCESS");
+    //     all_off(all_leds, 5);
+    //     req->send(response);
+    // });
 
     webserver.on("/colour", HTTP_GET, handle_message_HTTP);
+
+    webserver.on("/status", HTTP_GET, get_current_status);
+
+    webserver.on("/change_mode", HTTP_GET, change_mode);
 
     // start server
     webserver.begin();
     server.listen(82);
     Serial.print("Is server live? ");
     Serial.println(server.available());
+}
+
+void change_mode(AsyncWebServerRequest * msg){
+    if (!(msg->hasParam("mode") && msg->hasParam("led"))){
+        msg->send(401, "application/json", "{\"error\" : \"need to have param \'mode\' and \'led\'\"}");
+        return;
+    }
+    leds->change_mode((Modes_t)atoi(msg->getParam("mode")->value().c_str()), atoi(msg->getParam("led")->value().c_str()));  
+    msg->send(200);
+}
+
+void get_current_status(AsyncWebServerRequest * msg){
+    String current_status;
+    leds->get_status(current_status);
+    Serial << current_status;
+    msg->send(200, "application/json", current_status);
+}
+
+void handle_change(AsyncWebServerRequest * msg){
+    RValue = round(atof(msg->getParam("r")->value().c_str()));
+    GValue = round(atof(msg->getParam("g")->value().c_str()));
+    BValue = round(atof(msg->getParam("b")->value().c_str()));
+    HValue = round(atof(msg->getParam("h")->value().c_str()));
+    SValue = round(atof(msg->getParam("s")->value().c_str()));
+    VValue = round(atof(msg->getParam("v")->value().c_str()));
+    if (msg->hasParam("led")){
+        which_led = atoi(msg->getParam("led")->value().c_str());
+        // 1 = top
+        // 0 = bottom
+        // 2 = both
+        if (which_led == 2)
+            leds->changeboth(rgbval_t{RValue, GValue, BValue});
+        else
+            leds->changesingle(rgbval_t{RValue, GValue, BValue}, which_led);
+    } else
+        leds->changeboth(rgbval_t{RValue, GValue, BValue});
+
+    msg->send(200);
 }
 
 void handle_message(WebsocketsMessage msg) {

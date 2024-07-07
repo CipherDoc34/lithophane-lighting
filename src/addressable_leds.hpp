@@ -1,6 +1,9 @@
 #include "rgbled.hpp"
 #include <cmath>
 
+#include "AsyncJson.h"
+#include "ArduinoJson.h"
+
 typedef struct rgbval_t{
     int red;
     int green;
@@ -27,6 +30,12 @@ typedef struct hsvval_t{
     float v;
 };
 
+enum which_led {
+    BOTTOM = 0,
+    TOP = 1,
+    BOTH = 2,
+};
+
 class AddressableLEDS{
     private:
         // const RGBpin top, bot;
@@ -34,11 +43,12 @@ class AddressableLEDS{
         RgbLed top;
         RgbLed bottom;
 
-        Modes_t mode;
+        Modes_t mode_top;
+        Modes_t mode_bot;
 
-        float brightness;
+        // float brightness;
 
-        unsigned long start;
+        unsigned long start_cycle, start_breath;
 
         float breath_step;
         int breath_interval;
@@ -49,8 +59,10 @@ class AddressableLEDS{
     public:
         AddressableLEDS(rgbled_t topled, rgbled_t botled):
             top(topled.red, topled.green, topled.blue, topled.type), bottom{botled.red, botled.green, botled.blue, botled.type},
-            breath_interval(100000), breath_step(0.1f), cur_step(0), cycle_interval(1000)
-        {};
+            breath_interval(100000), breath_step(0.1f), cur_step(0), cycle_interval(1000), mode_bot(Modes_t::STATIC), mode_top(Modes_t::STATIC)
+        {
+            this->init();
+        };
 
         void init(); 
 
@@ -61,6 +73,8 @@ class AddressableLEDS{
         //      0 = bot
         void changesingle(rgbval_t value, int which);
 
+        void change(rgbval_t value, int which);
+
         void setboth();
 
         // which:
@@ -68,12 +82,24 @@ class AddressableLEDS{
         //      0 = bot
         void setsingle(int which);
 
-        
-        void change_mode(Modes_t mode);
+        // which:
+        //      1 = top
+        //      0 = bot
+        //      2 = both
+        void change_mode(Modes_t mode, int which);
+
+        void cycle(int which);
 
         void run();
 
-        void breath();
+        void run_mode(int led);
+
+        void breath(int which);
 
         rgbval_t hue_to_rgb(float h, float s, float v);
+
+        size_t get_status(String& serialized);
+
+        void update_breath(float step, int interval);
+        void update_cycle(float step, int interval);
 };

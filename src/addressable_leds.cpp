@@ -1,11 +1,23 @@
 #include "addressable_leds.hpp"
 
 void AddressableLEDS::init(){
-    this->start = micros();
+    this->start_breath = micros();
+    this->start_cycle = micros();
 }
 
-void AddressableLEDS::change_mode(Modes_t mode){
-    this->mode = mode;
+void AddressableLEDS::change_mode(Modes_t mode, int which){
+    switch(which){
+        case 0:
+            this->mode_bot = mode;
+            break;
+        case 1:
+            this->mode_top = mode;
+            break;
+        case 2:
+        default:
+            this->mode_bot = mode;
+            this->mode_top = mode;
+    }
 }
 
 void AddressableLEDS::changeboth(rgbval_t value){
@@ -47,15 +59,17 @@ void AddressableLEDS::run(){
     //     start = micros();
     // }
 
-    if (micros() - this->start >= this->cycle_interval){
-        cur_step = fmod((cur_step + 0.1f), 361);
-        this->changesingle(this->hue_to_rgb(cur_step, 1, 1), 1);
-        // Serial.print(this->top.getred());
-        // Serial.print("  ");
-        // Serial.print(this->top.getgreen());
-        // Serial.print("  ");
-        // Serial.println(this->top.getred());
-    }
+    // if (micros() - this->start >= this->cycle_interval){
+    //     cur_step = fmod((cur_step + 0.1f), 361);
+    //     this->changesingle(this->hue_to_rgb(cur_step, 1, 1), 1);
+    //     // Serial.print(this->top.getred());
+    //     // Serial.print("  ");
+    //     // Serial.print(this->top.getgreen());
+    //     // Serial.print("  ");
+    //     // Serial.println(this->top.getred());
+    // }
+    this->run_mode(which_led::TOP);
+    this->run_mode(which_led::BOTTOM);
     this->setboth();
 }
 
@@ -91,4 +105,100 @@ rgbval_t AddressableLEDS::hue_to_rgb(float h, float s, float v){
     // Serial.println(ret.blue);
     return ret;
 
+}
+
+size_t AddressableLEDS::get_status(String& serialized){
+    StaticJsonDocument<100> data;
+    data["top_red"] = this->top.getred();
+    data["top_green"] = this->top.getgreen();
+    data["top_blue"] = this->top.getblue();
+    data["top_mode"] = this->mode_top;
+
+    data["bot_red"] = this->bottom.getred();
+    data["bot_green"] = this->bottom.getgreen();
+    data["bot_blue"] = this->bottom.getblue();
+    data["bot_mode"] = this->mode_bot;
+
+    return serializeJson(data, serialized);
+}
+
+void AddressableLEDS::update_breath(float step, int interval){
+    // this->breath_step = step;
+    this->breath_interval = interval;
+}
+void AddressableLEDS::update_cycle(float step, int interval){
+    this->cycle_interval = interval;
+    // this->cur_step = step;
+}
+
+
+void AddressableLEDS::breath(int which){
+    if (micros() - this->start_breath >= this->breath_interval){
+        RgbLed * led;
+        switch(which){
+            case TOP:
+                led = &this->top;
+                break;
+            case BOTTOM:
+                led = &this->bottom;
+                break;
+        }
+        if ((led->getBrightness() + this->breath_step) >= 1.0f)
+            this->breath_step = -0.1f;
+        else if ((led->getBrightness() + this->breath_step) <= 0.0f)
+            this->breath_step = 0.1f;
+        
+        // float brightness = fmod(led->getBrightness() + this->breath_step, 1);
+        // led->setBrightness(brightness);
+
+        led->setBrightness(fmod(led->getBrightness() + this->breath_step, 1));
+        start_breath = micros();
+    }
+}
+
+void AddressableLEDS::cycle(int which){
+    if (micros() - this->start_cycle >= this->breath_interval){
+        cur_step = fmod((cur_step + 0.1f), 361);
+        this->change(this->hue_to_rgb(cur_step, 1, 1), which);
+        this->start_cycle = micros();
+    }
+}
+
+
+void AddressableLEDS::run_mode(int led){
+    Modes_t mode;
+    if (led == TOP){
+        mode = mode_top;
+    } else{
+        mode = mode_bot;
+    }
+    switch(mode){
+        case Modes_t::STATIC:
+            RgbLed * this_led;
+            if (led == TOP)
+                this_led = &this->top;
+            else
+                this_led = &this->bottom;
+            this_led->setBrightness(1);
+            break;
+        case Modes_t::CYCLECOLOUR:
+            this->cycle(led);
+            break;
+        case Modes_t::BREATH:
+            this->breath(led);
+    }
+}
+
+void AddressableLEDS::change(rgbval_t value, int which){
+    switch(which){
+        case which_led::TOP:
+            this->changesingle(value, which_led::TOP);
+            break;
+        case which_led::BOTTOM:
+            this->changesingle(value, which_led::BOTTOM);
+            break;
+        case which_led::BOTH:
+        default:
+            this->changeboth(value);
+    }
 }
