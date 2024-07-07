@@ -59,7 +59,7 @@ class AddressableLEDS{
     public:
         AddressableLEDS(rgbled_t topled, rgbled_t botled):
             top(topled.red, topled.green, topled.blue, topled.type), bottom{botled.red, botled.green, botled.blue, botled.type},
-            breath_interval(100000), breath_step(0.1f), cur_step(0), cycle_interval(1000), mode_bot(Modes_t::STATIC), mode_top(Modes_t::STATIC)
+            breath_interval(100), breath_step(0.01f), cur_step(0), cycle_interval(100), mode_bot(Modes_t::STATIC), mode_top(Modes_t::STATIC)
         {
             this->init();
         };

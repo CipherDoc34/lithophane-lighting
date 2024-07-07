@@ -59,7 +59,7 @@ const float white_bot_max_brightness = 0.5;
 AddressableLEDS * leds;
 
 
-void handle_message_HTTP(AsyncWebServerRequest * msg);
+// void handle_message_HTTP(AsyncWebServerRequest * msg);
 
 void handle_change(AsyncWebServerRequest * msg);
 
@@ -165,11 +165,11 @@ void setup() {
     //     req->send(response);
     // });
 
-    webserver.on("/colour", HTTP_GET, handle_message_HTTP);
+    webserver.on("/colour", HTTP_GET | HTTP_OPTIONS, handle_change);
 
-    webserver.on("/status", HTTP_GET, get_current_status);
+    webserver.on("/status", HTTP_GET | HTTP_OPTIONS, get_current_status);
 
-    webserver.on("/change_mode", HTTP_GET, change_mode);
+    webserver.on("/change_mode", HTTP_GET | HTTP_OPTIONS, change_mode);
 
     // start server
     webserver.begin();
@@ -179,22 +179,61 @@ void setup() {
 }
 
 void change_mode(AsyncWebServerRequest * msg){
+    Serial.println(msg->host());
+    if (msg->method() == HTTP_OPTIONS) {
+        AsyncWebServerResponse *response = msg->beginResponse(200);
+        // response->addHeader("Allow-Control-Allow-Origin", "*");
+        response->addHeader("Access-Control-Allow-Origin", "*");
+        response->addHeader("Access-Control-Allow-Methods", "GET, POST, PUT");
+        response->addHeader("Access-Control-Allow-Headers", "*");
+        msg->send(response);
+    }
     if (!(msg->hasParam("mode") && msg->hasParam("led"))){
         msg->send(401, "application/json", "{\"error\" : \"need to have param \'mode\' and \'led\'\"}");
         return;
     }
     leds->change_mode((Modes_t)atoi(msg->getParam("mode")->value().c_str()), atoi(msg->getParam("led")->value().c_str()));  
-    msg->send(200);
+    AsyncWebServerResponse *response = msg->beginResponse(200);
+    // response->addHeader("Allow-Control-Allow-Origin", "*");
+    response->addHeader("Access-Control-Allow-Origin", "*");
+    response->addHeader("Access-Control-Allow-Methods", "GET, POST, PUT");
+    response->addHeader("Access-Control-Allow-Headers", "*");
+    msg->send(response);
+    // msg->send(200);
 }
 
 void get_current_status(AsyncWebServerRequest * msg){
+    if (msg->method() == HTTP_OPTIONS) {
+        AsyncWebServerResponse *response = msg->beginResponse(200);
+        // response->addHeader("Allow-Control-Allow-Origin", "*");
+        response->addHeader("Access-Control-Allow-Origin", "*");
+        response->addHeader("Access-Control-Allow-Methods", "GET, POST, PUT");
+        response->addHeader("Access-Control-Allow-Headers", "*");
+        msg->send(response);
+    }
+    // } else {
+    //     msg->send(404, "application/json", "{\"message\":\"Not found\"}");
+    // }
     String current_status;
     leds->get_status(current_status);
     Serial << current_status;
-    msg->send(200, "application/json", current_status);
+    AsyncWebServerResponse *response = msg->beginResponse(200, "application/json", current_status);
+    // response->addHeader("Allow-Control-Allow-Origin", "*");
+    response->addHeader("Access-Control-Allow-Origin", "*");
+    response->addHeader("Access-Control-Allow-Methods", "GET, POST, PUT");
+    response->addHeader("Access-Control-Allow-Headers", "*");
+    msg->send(response);
 }
 
 void handle_change(AsyncWebServerRequest * msg){
+    if (msg->method() == HTTP_OPTIONS) {
+        AsyncWebServerResponse *response = msg->beginResponse(200);
+        // response->addHeader("Allow-Control-Allow-Origin", "*");
+        response->addHeader("Access-Control-Allow-Origin", "*");
+        response->addHeader("Access-Control-Allow-Methods", "GET, POST, PUT");
+        response->addHeader("Access-Control-Allow-Headers", "*");
+        msg->send(response);
+    }
     RValue = round(atof(msg->getParam("r")->value().c_str()));
     GValue = round(atof(msg->getParam("g")->value().c_str()));
     BValue = round(atof(msg->getParam("b")->value().c_str()));
@@ -212,8 +251,12 @@ void handle_change(AsyncWebServerRequest * msg){
             leds->changesingle(rgbval_t{RValue, GValue, BValue}, which_led);
     } else
         leds->changeboth(rgbval_t{RValue, GValue, BValue});
-
-    msg->send(200);
+    AsyncWebServerResponse * res = msg->beginResponse(200);
+    // res->addHeader("Allow-Control-Allow-Origin", "*");
+    res->addHeader("Access-Control-Allow-Origin", "*");
+    res->addHeader("Access-Control-Allow-Methods", "GET, POST, PUT");
+    res->addHeader("Access-Control-Allow-Headers", "*");
+    msg->send(res);
 }
 
 void handle_message(WebsocketsMessage msg) {

@@ -18,6 +18,13 @@ void AddressableLEDS::change_mode(Modes_t mode, int which){
             this->mode_bot = mode;
             this->mode_top = mode;
     }
+    Serial.print(this->mode_bot);
+    Serial.print(" ");
+    Serial.print(this->mode_top);
+    Serial.print(" ");
+    Serial.print(mode);
+    Serial.print(" ");
+    Serial.println(which);
 }
 
 void AddressableLEDS::changeboth(rgbval_t value){
@@ -68,8 +75,12 @@ void AddressableLEDS::run(){
     //     // Serial.print("  ");
     //     // Serial.println(this->top.getred());
     // }
-    this->run_mode(which_led::TOP);
-    this->run_mode(which_led::BOTTOM);
+    if (this->mode_bot == this->mode_top)
+        this->run_mode(which_led::BOTH);
+    else {
+        this->run_mode(which_led::TOP);
+        this->run_mode(which_led::BOTTOM);
+    }
     this->setboth();
 }
 
@@ -144,9 +155,9 @@ void AddressableLEDS::breath(int which){
                 break;
         }
         if ((led->getBrightness() + this->breath_step) >= 1.0f)
-            this->breath_step = -0.1f;
+            this->breath_step = -0.01f;
         else if ((led->getBrightness() + this->breath_step) <= 0.0f)
-            this->breath_step = 0.1f;
+            this->breath_step = 0.01f;
         
         // float brightness = fmod(led->getBrightness() + this->breath_step, 1);
         // led->setBrightness(brightness);
@@ -166,26 +177,48 @@ void AddressableLEDS::cycle(int which){
 
 
 void AddressableLEDS::run_mode(int led){
-    Modes_t mode;
-    if (led == TOP){
-        mode = mode_top;
-    } else{
-        mode = mode_bot;
-    }
-    switch(mode){
-        case Modes_t::STATIC:
-            RgbLed * this_led;
-            if (led == TOP)
-                this_led = &this->top;
-            else
-                this_led = &this->bottom;
-            this_led->setBrightness(1);
-            break;
-        case Modes_t::CYCLECOLOUR:
-            this->cycle(led);
-            break;
-        case Modes_t::BREATH:
-            this->breath(led);
+    if (led == which_led::BOTH){
+        switch(this->mode_bot){
+            case Modes_t::STATIC:
+                this->top.setBrightness(1);
+                this->bottom.setBrightness(1);
+                break;
+            case Modes_t::CYCLECOLOUR:
+                this->cycle(led);
+                break;
+            case Modes_t::BREATH:
+                if (micros() - this->start_breath >= this->breath_interval){
+                    if ((this->top.getBrightness() + this->breath_step) >= 1.0f)
+                        this->breath_step = -0.01f;
+                    else if ((this->top.getBrightness() + this->breath_step) <= 0.0f)
+                        this->breath_step = 0.01f;
+                    float brightness = fmod(this->top.getBrightness() + this->breath_step, 1);
+                    this->top.setBrightness(brightness);
+                    this->bottom.setBrightness(brightness);
+                    start_breath = micros();
+                }
+        }
+    } else {
+        Modes_t mode;
+        if (led == which_led::TOP)
+            mode = this->mode_top;
+        else
+            mode = this->mode_bot;
+        switch(mode){
+            case Modes_t::STATIC:
+                RgbLed * this_led;
+                if (led == TOP)
+                    this_led = &this->top;
+                else
+                    this_led = &this->bottom;
+                this_led->setBrightness(1);
+                break;
+            case Modes_t::CYCLECOLOUR:
+                this->cycle(led);
+                break;
+            case Modes_t::BREATH:
+                this->breath(led);
+        }
     }
 }
 
