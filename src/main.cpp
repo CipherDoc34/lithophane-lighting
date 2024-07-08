@@ -67,6 +67,10 @@ void get_current_status(AsyncWebServerRequest * msg);
 
 void change_mode(AsyncWebServerRequest * msg);
 
+void change_breathe_interval(AsyncWebServerRequest * req);
+
+void change_cycle_interval(AsyncWebServerRequest * req);
+
 // Generic template
 template<class T> 
 inline Print &operator <<(Print &stream, T arg) 
@@ -143,6 +147,7 @@ void setup() {
     // Serial.println(IP);
     Serial << ssid << " " << password;
     WiFi.mode(WIFI_STA);
+    WiFi.setHostname(hostname);
     WiFi.begin(ssid, password);
     while(WiFi.status() != WL_CONNECTED){
         Serial.print(".");
@@ -171,11 +176,64 @@ void setup() {
 
     webserver.on("/change_mode", HTTP_GET | HTTP_OPTIONS, change_mode);
 
+    webserver.on("/breathe_interval", HTTP_GET | HTTP_OPTIONS, change_breathe_interval);
+
+    webserver.on("/cycle_interval", HTTP_GET | HTTP_OPTIONS, change_cycle_interval);
+
     // start server
     webserver.begin();
     server.listen(82);
     Serial.print("Is server live? ");
     Serial.println(server.available());
+}
+
+void change_breathe_interval(AsyncWebServerRequest * req){
+    // Serial.println(req->host());
+    if (req->method() == HTTP_OPTIONS) {
+        AsyncWebServerResponse *response = req->beginResponse(200);
+        response->addHeader("Access-Control-Allow-Origin", "*");
+        response->addHeader("Access-Control-Allow-Methods", "GET, POST, PUT");
+        response->addHeader("Access-Control-Allow-Headers", "*");
+        req->send(response);
+    }
+
+    if (!(req->hasParam("interval"))){
+        req->send(401, "application/json", "{\"error\" : \"need to have param \'interval\'\"}");
+        return;
+    }
+
+    leds->update_breath(0, 1000000 * atof(req->getParam("interval")->value().c_str())); 
+
+    AsyncWebServerResponse *response = req->beginResponse(200);
+    response->addHeader("Access-Control-Allow-Origin", "*");
+    response->addHeader("Access-Control-Allow-Methods", "GET, POST, PUT");
+    response->addHeader("Access-Control-Allow-Headers", "*");
+    req->send(response);
+}
+
+void change_cycle_interval(AsyncWebServerRequest * req){
+    if (req->method() == HTTP_OPTIONS) {
+        AsyncWebServerResponse *response = req->beginResponse(200);
+        response->addHeader("Access-Control-Allow-Origin", "*");
+        response->addHeader("Access-Control-Allow-Methods", "GET, POST, PUT");
+        response->addHeader("Access-Control-Allow-Headers", "*");
+        req->send(response);
+    }
+
+    if (!(req->hasParam("interval"))){
+        req->send(401, "application/json", "{\"error\" : \"need to have param \'interval\'\"}");
+        return;
+    }
+
+    // Serial.println(10 * atof(req->getParam("interval")->value().c_str()));
+
+    leds->update_cycle(0, 1000000 * atof(req->getParam("interval")->value().c_str())); 
+
+    AsyncWebServerResponse *response = req->beginResponse(200);
+    response->addHeader("Access-Control-Allow-Origin", "*");
+    response->addHeader("Access-Control-Allow-Methods", "GET, POST, PUT");
+    response->addHeader("Access-Control-Allow-Headers", "*");
+    req->send(response);
 }
 
 void change_mode(AsyncWebServerRequest * msg){

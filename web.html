@@ -86,6 +86,14 @@
 				/* whatever else needs to be done... */
 			}
 		}
+		.narrow{
+			width: 200px;
+			height: 200px;
+		}
+		.big{
+			width: 400px;
+			height: 400px;
+		}
 
     </style>
 
@@ -305,10 +313,16 @@
             align-items: center;
             height: 400px;
             padding: 10px;
+			position:relative;
         ">
-        <div id="colorselect" style="
-			width:400px;
-			height:400px;
+        <!-- <div id="colorselect" style="
+			width:200px;
+			height:200px;
+			display:flex;
+			position:relative;
+			z-index: 0;
+		"></div> -->
+		<div id="colorselect" style="
 			display:flex;
 			position:relative;
 			z-index: 0;
@@ -348,7 +362,7 @@
             </label>
 
 			<div style="height: 15px;"></div>
-			Breath
+			Breathe
             <label class="switch" style="position:relative;z-index:2;text-align: center;/* padding-top: 30px; */">
                 <input id="breath_toggle" type="checkbox">
                 <span class="slider round"></span>
@@ -369,14 +383,20 @@
 			padding-top: 1%;
 			text-align: center;
 		">
-			<input type="range" min="1" max="100" value="1" class="sliders" id="myRange" step="0.01">
+			Breathe Speed
+			<br/>
+			<input type="range" min="0" max="0.029" value="0" class="sliders" id="breath_range" step="0.001" style="width: 300px;">
+			<br/>
+			Cycle Speed
+			<br/>
+			<input type="range" min="0" max="0.029" value="0.0001" class="sliders" id="cycle_range" step="0.001" style="width: 300px;">
 		</div>
 
     <script>
         const top_toggle = document.getElementById("top_toggle");
         const bot_toggle = document.getElementById("bot_toggle");
 		const both_toggle = document.getElementById("both_toggle");
-		var led_select;
+		var led_select, is_ios = false;
 		// const address = "http://" + window.location.host + "/";
 		const address = "http://192.168.50.108/"
 
@@ -417,7 +437,8 @@
                 top_toggle.checked=false;
 				bot_toggle.checked=false;
 				led_select = 2;
-			}
+			} else 
+				both_toggle.checked=true;
 			get_status(led_select);
 		});
 
@@ -435,10 +456,10 @@
 				// }
 				change_mode(1, led_select);
 			} else {
-				if (update_colour_interval){
-					clearInterval(update_colour_interval);
-					update_colour_interval = null;
-				}
+				// if (update_colour_interval){
+				// 	clearInterval(update_colour_interval);
+				// 	update_colour_interval = null;
+				// }
 				static_toggle.checked = true;
 				change_mode(0, led_select);
 			}
@@ -476,10 +497,42 @@
 				static_toggle.checked = true;
 		});
 
+		document.getElementById("breath_range").addEventListener("input", (event)=>{
+			var xml = new XMLHttpRequest;
+			var params = "?interval=" + (0.03 - event.target.value);
+			xml.open("GET", address + "breathe_interval" + params, true);
+			xml.onload = function() {};
+			xml.send(null);
+		});
+
+		document.getElementById("cycle_range").addEventListener("input", (event)=>{
+			var xml = new XMLHttpRequest;
+			var params = "?interval=" + (0.03 - event.target.value);
+			xml.open("GET", address + "cycle_interval" + params, true);
+			xml.onload = function() {};
+			xml.send(null);
+		});
+
 		window.addEventListener("load", (event)=>{
 			both_toggle.checked=true;
 			led_select = 2;
 			get_status(led_select);
+			console.log(navigator.userAgent);
+			// if (navigator.userAgent.match(/Android|BlackBerry|iPhone|iPad|iPod|Opera Mini|IEMobile/i))
+			if (navigator.userAgent.match(/iPhone|iPad|iPod/i)){
+				is_ios = true;
+				document.getElementById("colorselect").addEventListener("touchend", (event) => {
+					sendHTTP(colorWheel.rgb[0], colorWheel.rgb[1], colorWheel.rgb[2], colorWheel.hsv[0], colorWheel.hsv[1], colorWheel.hsv[2], led_select);
+					// console.log("sent");
+					// setTimeout(()=>{console.log("sent");}, 1000);
+					// alert("");
+					var start = new Date().getTime();
+					for (var i = 0; i < 1e7; i++) {
+						if ((new Date().getTime() - start) > 1000)	break;
+					}
+				});
+			}
+			
 		});
 
         // const view = document.getElementById('stream');
@@ -571,6 +624,9 @@
 			var xmlHTTP = new XMLHttpRequest();
 			var params = "r=" + r + "&g=" + g + "&b=" +  b + "&h=" +  h + "&s=" +  s + "&v=" +  v + "&led=" + led_select;
 			xmlHTTP.timeout = 3;
+			xmlHTTP.onreadystatechange = function(){
+				return;
+			}
 			// xmlHTTP.open("GET", "http://" + window.location.host + "/colour?" +  params , true);
 			xmlHTTP.open("GET", address + "colour?" +  params , true);
 			xmlHTTP.setRequestHeader("Allow-Control-Allow-Origin", "*");
@@ -606,7 +662,7 @@
 			console.log("hsv:", color.hsv[0], color.hsv[1], color.hsv[2]);
 			console.log("rgb:", color.rgb[0], color.rgb[1], color.rgb[2]);
 			// send(getRGBData(color.rgb[0], color.rgb[1], color.rgb[2], color.hsv[0], color.hsv[1], color.hsv[2]));
-
+			if (is_ios) return;
 			var now = new Date().getTime();
             if (lastSend === undefined || now - lastSend >= 30) {
                 sendHTTP(color.rgb[0], color.rgb[1], color.rgb[2], color.hsv[0], color.hsv[1], color.hsv[2], led_select);
@@ -630,10 +686,15 @@
 		// console.log("hex:", colorWheel.hex);
 
 		// please call redraw() after changing some appearance properties.
-		colorWheel.wheelDiameter = 400;
-		colorWheel.wheelThickness = 40;
+		
 		get_status(led_select);
-		colorWheel.redraw();
+		document.getElementById("colorselect").setAttribute("class", "narrow");
+		if (window.innerWidth > 600){
+			colorWheel.wheelDiameter = 400;
+			colorWheel.wheelThickness = 40;
+			document.getElementById("colorselect").setAttribute("class", "big");
+			colorWheel.redraw();
+		}
 
 		// function getRGBData(R, G, B, H, S, V) {
 		// 	// return Math.round(nJoyX) + "," + Math.round(nJoyY);   // The function returns the product of p1 and p2

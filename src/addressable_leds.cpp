@@ -168,8 +168,8 @@ void AddressableLEDS::breath(int which){
 }
 
 void AddressableLEDS::cycle(int which){
-    if (micros() - this->start_cycle >= this->breath_interval){
-        cur_step = fmod((cur_step + 0.1f), 361);
+    if (micros() - this->start_cycle >= this->cycle_interval){
+        cur_step = fmod((cur_step + 0.3f), 361);
         this->change(this->hue_to_rgb(cur_step, 1, 1), which);
         this->start_cycle = micros();
     }

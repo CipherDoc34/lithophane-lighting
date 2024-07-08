@@ -79,6 +79,22 @@
         .slider.round:before {
         border-radius: 50%;
         }
+		@media screen and (max-width: 800px) {
+			.element-to-stack {
+				float: none;
+				width: auto;
+				/* whatever else needs to be done... */
+			}
+		}
+		.narrow{
+			width: 200px;
+			height: 200px;
+		}
+		.big{
+			width: 400px;
+			height: 400px;
+		}
+
     </style>
 
 
@@ -297,17 +313,24 @@
             align-items: center;
             height: 400px;
             padding: 10px;
+			position:relative;
         ">
-        <div id="colorselect" style="width:400px;height:400px;display:flex"></div>
+		<div id="colorselect" style="
+			display:flex;
+			position:relative;
+			z-index: 0;
+		"></div>
 
         <div class="toggles" style="
-                display: flex;
-                flex-direction: column;
-                text-align: center;
-                padding: 10px;
+			display: flex;
+			flex-direction: column;
+			text-align: center;
+			padding: 10px;
+			position:relative;
+			z-index: 0;
         ">
             Top
-            <label class="switch" style="position:relative;z-index:1;text-align: center;">
+            <label class="switch element-to-stack" style="position:relative;z-index:1;text-align: center;">
                 <input id="top_toggle" type="checkbox">
                 <span class="slider round"></span>
             </label>
@@ -317,22 +340,67 @@
                 <input id="bot_toggle" type="checkbox">
                 <span class="slider round"></span>
             </label>
+			<div style="height: 15px;"></div>
 			Both
             <label class="switch" style="position:relative;z-index:2;text-align: center;/* padding-top: 30px; */">
                 <input id="both_toggle" type="checkbox">
                 <span class="slider round"></span>
             </label>
+
+			<div style="height: 15px;"></div>
+			Cycle
+            <label class="switch" style="position:relative;z-index:2;text-align: center;/* padding-top: 30px; */">
+                <input id="cycle_toggle" type="checkbox">
+                <span class="slider round"></span>
+            </label>
+
+			<div style="height: 15px;"></div>
+			Breathe
+            <label class="switch" style="position:relative;z-index:2;text-align: center;/* padding-top: 30px; */">
+                <input id="breath_toggle" type="checkbox">
+                <span class="slider round"></span>
+            </label>
+
+			<div style="height: 15px;"></div>
+			Static
+            <label class="switch" style="position:relative;z-index:2;text-align: center;/* padding-top: 30px; */">
+                <input id="static_toggle" type="checkbox">
+                <span class="slider round"></span>
+            </label>
         </div>
 
     </div>
+	<div class="slidecontainer" style="
+			position:relative;
+			z-index:1;
+			padding-top: 1%;
+			text-align: center;
+		">
+			Breathe Speed
+			<br/>
+			<input type="range" min="0" max="0.029" value="0" class="sliders" id="breath_range" step="0.001" style="width: 300px;">
+			<br/>
+			Cycle Speed
+			<br/>
+			<input type="range" min="0" max="0.029" value="0.0001" class="sliders" id="cycle_range" step="0.001" style="width: 300px;">
+		</div>
 
     <script>
         const top_toggle = document.getElementById("top_toggle");
         const bot_toggle = document.getElementById("bot_toggle");
 		const both_toggle = document.getElementById("both_toggle");
-		var led_select;
-		// const address = "http://" + window.location.host + "/";
-		const address = "http://192.168.50.108/"
+		var led_select, is_ios = false;
+		const address = "http://" + window.location.host + "/";
+		
+		// const address = "http://192.168.50.108/"
+
+		function change_mode(mode, led){
+			var xml = new XMLHttpRequest;
+			var params = "?mode=" + mode + "&led=" + led;
+			xml.open("GET", address + "change_mode" + params, true);
+			xml.setRequestHeader("Allow-Control-Allow-Origin", "*");
+			xml.send(null);
+		}
 
         top_toggle.addEventListener('change', (event) => {
             if(event.currentTarget.checked) {
@@ -363,43 +431,117 @@
                 top_toggle.checked=false;
 				bot_toggle.checked=false;
 				led_select = 2;
-			}
+			} else 
+				both_toggle.checked=true;
 			get_status(led_select);
+		});
+
+		const cycle_toggle = document.getElementById("cycle_toggle");
+        const breath_toggle = document.getElementById("breath_toggle");
+		const static_toggle = document.getElementById("static_toggle");
+
+		cycle_toggle.addEventListener('change', (event) => {
+			if(event.currentTarget.checked) {
+                breath_toggle.checked=false;
+				static_toggle.checked=false;
+				change_mode(1, led_select);
+			} else {
+				static_toggle.checked = true;
+				change_mode(0, led_select);
+			}
+		});
+
+		breath_toggle.addEventListener('change', (event) => {
+			if(event.currentTarget.checked) {
+                cycle_toggle.checked=false;
+				static_toggle.checked=false;
+				change_mode(2, led_select);
+			} else{
+				static_toggle.checked = true;
+				change_mode(0, led_select);
+			}
+		});
+
+		static_toggle.addEventListener('change', (event) => {
+			if(event.currentTarget.checked) {
+                breath_toggle.checked=false;
+				cycle_toggle.checked=false;
+				change_mode(0, led_select);
+			} else
+				static_toggle.checked = true;
+		});
+
+		document.getElementById("breath_range").addEventListener("input", (event)=>{
+			var xml = new XMLHttpRequest;
+			var params = "?interval=" + (0.03 - event.target.value);
+			xml.open("GET", address + "breathe_interval" + params, true);
+			xml.onload = function() {};
+			xml.send(null);
+		});
+
+		document.getElementById("cycle_range").addEventListener("input", (event)=>{
+			var xml = new XMLHttpRequest;
+			var params = "?interval=" + (0.03 - event.target.value);
+			xml.open("GET", address + "cycle_interval" + params, true);
+			xml.onload = function() {};
+			xml.send(null);
 		});
 
 		window.addEventListener("load", (event)=>{
 			both_toggle.checked=true;
 			led_select = 2;
 			get_status(led_select);
+			
+			if (navigator.userAgent.match(/iPhone|iPad|iPod/i)){
+				is_ios = true;
+				document.getElementById("colorselect").addEventListener("touchend", (event) => {
+					sendHTTP(colorWheel.rgb[0], colorWheel.rgb[1], colorWheel.rgb[2], colorWheel.hsv[0], colorWheel.hsv[1], colorWheel.hsv[2], led_select);
+					var start = new Date().getTime();
+					for (var i = 0; i < 1e7; i++) {
+						if ((new Date().getTime() - start) > 1000)	break;
+					}
+				});
+			}
+			
 		});
-
-        ws.onmessage = message => {
-            if (message.data instanceof Blob) {
-                var urlObject = URL.createObjectURL(message.data);
-                view.src = urlObject;
-            }
-        };
 
 		function get_status(which){
 			var xmlHTTP = new XMLHttpRequest();
 			xmlHTTP.open("GET", address + "status", true);
 			xmlHTTP.setRequestHeader("Allow-Control-Allow-Origin", "*");
 			xmlHTTP.onload = function() {
+				var mode;
 				var json = JSON.parse(this.responseText);
-				console.log(json);
 				if (which == 1){
 					colorWheel.rgb = [json.top_red, json.top_green, json.top_blue];
+					mode = json.top_mode;
 				} else if (which == 0){
 					colorWheel.rgb = [json.bot_red, json.bot_green, json.bot_blue];
+					mode = json.bot_mode;
 				}else{
 					colorWheel.rgb = [json.bot_red, json.bot_green, json.bot_blue];
+					mode = json.top_mode;
+				}
+				if (mode == 1){
+					cycle_toggle.checked = true;
+					breath_toggle.checked = false;
+					static_toggle.checked = false;
+				} else if (mode == 2){
+					cycle_toggle.checked = false;
+					breath_toggle.checked = true;
+					static_toggle.checked = false;
+				} else if (mode == 0){
+					cycle_toggle.checked = false;
+					breath_toggle.checked = false;
+					static_toggle.checked = true;
 				}
 			};
 			xmlHTTP.send(null);
 		}
+
+
         var lastText, lastSend, sendTimeout;
 
-        // limit sending to one message every 30 ms
         // https://github.com/neonious/lowjs_esp32_examples/blob/master/neonious_one/cellphone_controlled_rc_car/www/index.html
         function send(txt) {
             var now = new Date().getTime();
@@ -428,7 +570,11 @@
 			var xmlHTTP = new XMLHttpRequest();
 			var params = "r=" + r + "&g=" + g + "&b=" +  b + "&h=" +  h + "&s=" +  s + "&v=" +  v + "&led=" + led_select;
 			xmlHTTP.timeout = 3;
+			xmlHTTP.onreadystatechange = function(){
+				return;
+			}
 			xmlHTTP.open("GET", address + "colour?" +  params , true);
+			xmlHTTP.setRequestHeader("Allow-Control-Allow-Origin", "*");
 			xmlHTTP.send(null);
 			return;
 		};
@@ -438,10 +584,10 @@
 
 		//https://github.com/luncheon/reinvented-color-wheel
 		var colorWheel = new ReinventedColorWheel({
-		// appendTo is the only required property. specify the parent element of the color wheel.
 		appendTo: document.getElementById("colorselect"),
 
 		// followings are optional properties and their default values.
+
 		// appearance
 		wheelDiameter: 200,
 		wheelThickness: 20,
@@ -450,18 +596,27 @@
 
 		// handler
 		onChange: function (color) {
-			// the only argument is the ReinventedColorWheel instance itself.
-			console.log("hsv:", color.hsv[0], color.hsv[1], color.hsv[2]);
-			console.log("rgb:", color.rgb[0], color.rgb[1], color.rgb[2]);
-			// send(getRGBData(color.rgb[0], color.rgb[1], color.rgb[2], color.hsv[0], color.hsv[1], color.hsv[2]));
-			sendHTTP(color.rgb[0], color.rgb[1], color.rgb[2], color.hsv[0], color.hsv[1], color.hsv[2], led_select);
+			if (is_ios) return;
+			var now = new Date().getTime();
+            if (lastSend === undefined || now - lastSend >= 30) {
+                sendHTTP(color.rgb[0], color.rgb[1], color.rgb[2], color.hsv[0], color.hsv[1], color.hsv[2], led_select);
+				lastSend = new Date().getTime();
+            }
 		},
 		});
 
-		colorWheel.wheelDiameter = 400;
-		colorWheel.wheelThickness = 40;
+
+		// please call redraw() after changing some appearance properties.
+		
 		get_status(led_select);
-		colorWheel.redraw();
+		document.getElementById("colorselect").setAttribute("class", "narrow");
+		if (window.innerWidth > 600){
+			colorWheel.wheelDiameter = 400;
+			colorWheel.wheelThickness = 40;
+			document.getElementById("colorselect").setAttribute("class", "big");
+			colorWheel.redraw();
+		}
+
 	</script>
 </body>
 </html>

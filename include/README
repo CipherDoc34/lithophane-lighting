@@ -40,3 +40,4 @@ https://gcc.gnu.org/onlinedocs/cpp/Header-Files.html
 
 
 must make a file called defs.hpp with SSID and PASS defined
+https://gchq.github.io/CyberChef/#recipe=Gzip('Dynamic%20Huffman%20Coding','index.html.gz','',false)To_Hex('0x',0)Split('0x',',0x')

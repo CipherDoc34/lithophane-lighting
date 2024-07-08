@@ -2,6 +2,8 @@
 // const char* ssid = SSID; //Enter SSID
 // const char* password = PASS; //Enter Password
 
+const char * hostname = "lithophane";
+
 using namespace websockets;
 WebsocketsServer server;
 AsyncWebServer webserver(80);
