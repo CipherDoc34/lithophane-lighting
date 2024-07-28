@@ -11,10 +11,10 @@ A class that represents 2 RgbLeds to represent the top and bottom LED.
 Implements the Static colour, Pulse or Breathing, and Cycle colour modes.
 These colour modes are updated in a non-blocking fashion to allow for other functions to execute in a single threaded environment.
 
-## V1
+## v0.5
 Connects to a wifi network with a static SSID and Password that is set constantly at the compile time. 
 Renders a static html webpage at http://\<esp8266 ip address\>, to control LED colours and modes.
 
-## Next: V2
+## Next: v1.0
 1. Create an android app to facilitate setup to allow for easy portability, when roaming different WiFi networks.
 2. Save LED settings to non-volitile storage for continuation after power interrupt.
