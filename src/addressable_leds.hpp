@@ -1,105 +1,115 @@
 #include "rgbled.hpp"
 #include <cmath>
+#include "Preferences.h"
 
 #include "AsyncJson.h"
 #include "ArduinoJson.h"
 
-typedef struct rgbval_t{
+typedef struct rgbval_t
+{
     int red;
     int green;
     int blue;
 };
 
-typedef struct rgbled_t{
+typedef struct rgbled_t
+{
     int red;
     int green;
     int blue;
     int type; // 1 = common cathode, 0 = common_anode
 };
 
-typedef enum Modes_t {
+typedef enum Modes_t
+{
     STATIC = 0,
     CYCLECOLOUR = 1,
     BREATH = 2,
-    
+
 };
 
-typedef struct hsvval_t{
+typedef struct hsvval_t
+{
     float h;
     float s;
     float v;
 };
 
-enum which_led {
+enum which_led
+{
     BOTTOM = 0,
     TOP = 1,
     BOTH = 2,
 };
 
-class AddressableLEDS{
-    private:
-        // const RGBpin top, bot;
+class AddressableLEDS
+{
+private:
+    // const RGBpin top, bot;
 
-        RgbLed top;
-        RgbLed bottom;
+    RgbLed top;
+    RgbLed bottom;
 
-        Modes_t mode_top;
-        Modes_t mode_bot;
+    Modes_t mode_top;
+    Modes_t mode_bot;
 
-        // float brightness;
+    // float brightness;
 
-        unsigned long start_cycle, start_breath;
+    unsigned long start_cycle, start_breath, saveState_timeout;
 
-        float breath_step;
-        int breath_interval;
+    float breath_step;
+    int breath_interval;
 
-        float cur_step;
-        int cycle_interval;
-    
-    public:
-        AddressableLEDS(rgbled_t topled, rgbled_t botled):
-            top(topled.red, topled.green, topled.blue, topled.type), bottom{botled.red, botled.green, botled.blue, botled.type},
-            breath_interval(10000), breath_step(0.01f), cur_step(0), cycle_interval(1), mode_bot(Modes_t::STATIC), mode_top(Modes_t::STATIC)
-        {
-            this->init();
-        };
+    float cur_step;
+    int cycle_interval;
 
-        void init(); 
+    Preferences nvState1, nvState2;
 
-        void changeboth(rgbval_t value);
+public:
+    AddressableLEDS(rgbled_t topled, rgbled_t botled) : top(topled.red, topled.green, topled.blue, topled.type), bottom{botled.red, botled.green, botled.blue, botled.type},
+                                                        breath_interval(10000), breath_step(0.01f), cur_step(0), cycle_interval(1), mode_bot(Modes_t::STATIC), mode_top(Modes_t::STATIC)
+    {
+        nvState1.begin("LED1");
+        nvState2.begin("LED2");
+        this->init();
+    };
 
-        // which:
-        //      1 = top
-        //      0 = bot
-        void changesingle(rgbval_t value, int which);
+    void init();
 
-        void change(rgbval_t value, int which);
+    void changeboth(rgbval_t value);
 
-        void setboth();
+    // which:
+    //      1 = top
+    //      0 = bot
+    void changesingle(rgbval_t value, int which);
 
-        // which:
-        //      1 = top
-        //      0 = bot
-        void setsingle(int which);
+    void change(rgbval_t value, int which);
 
-        // which:
-        //      1 = top
-        //      0 = bot
-        //      2 = both
-        void change_mode(Modes_t mode, int which);
+    void setboth();
 
-        void cycle(int which);
+    // which:
+    //      1 = top
+    //      0 = bot
+    void setsingle(int which);
 
-        void run();
+    // which:
+    //      1 = top
+    //      0 = bot
+    //      2 = both
+    void change_mode(Modes_t mode, int which);
 
-        void run_mode(int led);
+    void cycle(int which);
 
-        void breath(int which);
+    void run();
 
-        rgbval_t hue_to_rgb(float h, float s, float v);
+    void run_mode(int led);
 
-        size_t get_status(String& serialized);
+    void breath(int which);
 
-        void update_breath(float step, int interval);
-        void update_cycle(float step, int interval);
+    rgbval_t hue_to_rgb(float h, float s, float v);
+
+    size_t get_status(String &serialized);
+
+    void update_breath(float step, int interval);
+    void update_cycle(float step, int interval);
 };
